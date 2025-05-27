@@ -186,11 +186,11 @@ with tabs[1]:
             }.get(row["Priority Level"], "")
 
             rows_html += f"""
-            <tr class="{prio_class}">
+            <tr>
                 <td>{row['WO Number']}</td>
                 <td>{row['Item']}</td>
                 <td>{row['PIC']}</td>
-                <td>{row['Priority Level']}</td>
+                <td class="{prio_class}">{row['Priority Level']}</td>
                 <td>{row['Start Date']}</td>
                 <td>{row['Due Date']}</td>
                 <td>{row['Sisa Hari']}</td>
