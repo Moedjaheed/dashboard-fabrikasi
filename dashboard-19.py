@@ -11,9 +11,7 @@ st.info('Terhubung dengan Google Sheets untuk manajemen proyek tim fabrikasi.')
 
 sheet_id = "1JLb5wzQL5yT-8joGw53Wc_rDlzO1TaJeZDWCLtB1DoY"
 worksheet_name = "Sheet1"
-cred_path = "aldzama-dashboard-hidrolis-415739989ae4.json"
-
-df, worksheet = load_gsheet(sheet_id, worksheet_name, cred_path)
+df, worksheet = load_gsheet(sheet_id, worksheet_name)
 
 today = datetime.now().date()
 df["Start Date"] = pd.to_datetime(df["Start Date"], errors="coerce", dayfirst=True)
