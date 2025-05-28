@@ -117,73 +117,64 @@ with tabs[1]:
         # CSS & HTML
         scroll_style = """
         <style>
+        .scroll-table-container {
+            height: 300px;
+            overflow: hidden;
+            position: relative;
+        }
+
         .scroll-container {
             width: 100%;
             border: 1px solid #444;
             border-radius: 5px;
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: hidden;
             font-family: sans-serif;
         }
-
         .scroll-table {
             width: 100%;
-            min-width: 700px; /* Allow horizontal scroll on mobile */
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: fixed;  /* ✅ Menyamakan lebar kolom antara thead dan tbody */
         }
-
         .scroll-table thead {
             position: sticky;
             top: 0;
             background-color: #1a1a1a;
             z-index: 2;
         }
-
-        .scroll-table th, .scroll-table td {
+        .scroll-table th {
+            padding: 10px;
+            font-size: 13px;
+            text-align: left;
+            border: 1px solid #333;
+            color: black;              /* ✅ teks putih */
+            background-color: white; /* ✅ latar belakang gelap */
+        }
+        .scroll-table td {
             padding: 10px;
             font-size: 13px;
             text-align: left;
             border: 1px solid #333;
         }
-
-        .scroll-table th {
-            background-color: white;
-            color: black;
-        }
-
         .scroll-body {
             height: 360px;
             overflow: hidden;
             position: relative;
         }
-
         .scroll-inner {
             display: inline-block;
             animation: scroll-up 100s linear infinite;
         }
-
         .high-priority { background-color: #ff4d4d; color: black; }
         .medium-priority { background-color: #ffd966; color: black; }
         .low-priority { background-color: #87ceeb; color: black; }
 
-        /* Responsive: Reduce font and enable scroll on small screen */
-        @media screen and (max-width: 768px) {
-            .scroll-table th, .scroll-table td {
-                font-size: 11px;
-                padding: 6px;
-            }
-            .scroll-table {
-                min-width: 100%;
-            }
-        }
         @keyframes scroll-up {
             0% { transform: translateY(0); }
             100% { transform: translateY(-50%); }
         }
         </style>
-        """
 
+        """
 
         # Baris isi tabel
         rows_html = ""
@@ -195,11 +186,11 @@ with tabs[1]:
             }.get(row["Priority Level"], "")
 
             rows_html += f"""
-            <tr>
+            <tr class="{prio_class}">
                 <td>{row['WO Number']}</td>
                 <td>{row['Item']}</td>
                 <td>{row['PIC']}</td>
-                <td class="{prio_class}">{row['Priority Level']}</td>
+                <td>{row['Priority Level']}</td>
                 <td>{row['Start Date']}</td>
                 <td>{row['Due Date']}</td>
                 <td>{row['Sisa Hari']}</td>
