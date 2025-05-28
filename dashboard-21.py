@@ -269,111 +269,73 @@ if menu == "Projects Status":
 
         
 
-        # Dua kolom: kiri = total proyek per PIC, kanan = distribusi proyek berdasarkan kategori
-        col_left, col_right = st.columns(2)
-        with col_left:
-            st.markdown("#### Total Proyek per PIC")
-            if "PIC" in df.columns and df["PIC"].notna().sum() > 0:
-                df_valid = df[df["PIC"].notna()].copy()
-                df_valid["PIC"] = df_valid["PIC"].astype(str)
+        # Gabungkan visualisasi dalam satu chart
+        st.markdown("##### Jumlah Proyek per PIC dan Prioritas")
+        if "PIC" in df.columns and df["PIC"].notna().sum() > 0:
+            df_valid = df[df["PIC"].notna()].copy()
+            df_valid["PIC"] = df_valid["PIC"].astype(str)
 
-                pic_leaderboard = (
-                    df_valid["PIC"]
-                    .value_counts()
-                    .rename_axis("PIC")
-                    .reset_index(name="Jumlah_Proyek")
-                )
+            # Data total proyek per PIC
+            pic_leaderboard = (
+                df_valid["PIC"]
+                .value_counts()
+                .rename_axis("PIC")
+                .reset_index(name="Total_Proyek")
+            )
 
-                # Terapkan filter
-                pic_leaderboard_filtered = pic_leaderboard[
-                    pic_leaderboard["Jumlah_Proyek"] >= 1
-                ].copy()
+            # Data proyek per PIC per prioritas
+            pic_priority_df = (
+                df.groupby(["PIC", "Priority Level"])
+                .size()
+                .reset_index(name="Jumlah")
+            )
 
-                # Tambahkan titik tengah untuk teks
-                pic_leaderboard_filtered["Midpoint"] = pic_leaderboard_filtered["Jumlah_Proyek"] / 2
+            # Chart stacked bar: PIC di sumbu Y, jumlah proyek di X, warna = prioritas
+            chart_stacked = alt.Chart(pic_priority_df).mark_bar().encode(
+                x=alt.X("Jumlah:Q", title="Jumlah Proyek"),
+                y=alt.Y("PIC:N", sort='-x', title="PIC"),
+                color=alt.Color("Priority Level:N", title="Prioritas"),
+                tooltip=["PIC", "Priority Level", "Jumlah"]
+            ).properties(
+                height=400,
+                title="Jumlah Proyek per PIC dan Prioritas"
+            )
 
-                # Visualisasi dalam satu kolom
-                st.markdown("##### 📊 Visualisasi Leaderboard")
-
-                base_chart = alt.Chart(pic_leaderboard_filtered).encode(
-                    y=alt.Y("PIC:N", sort='-x', title="PIC")
-                )
-
-                bars = base_chart.mark_bar().encode(
-                    x=alt.X("Jumlah_Proyek:Q", title="Jumlah Proyek"),
-                    tooltip=["PIC:N", "Jumlah_Proyek:Q"]
-                )
-
-                labels = alt.Chart(pic_leaderboard_filtered).mark_text(
-                    align='center',
-                    baseline='middle',
-                    color='white'
-                ).encode(
-                    x=alt.X("Midpoint:Q"),
-                    y=alt.Y("PIC:N"),
-                    text=alt.Text("Jumlah_Proyek:Q")
-                )
-
-                st.altair_chart(
-                    (bars + labels).properties(
-                        height=400,
-                        title="PIC dengan Jumlah Proyek Terbanyak"
-                    ),
-                    use_container_width=True
-                )
-            else:
-                st.warning("⚠️ Tidak ada data PIC yang tersedia untuk ditampilkan.")
-
-        with col_right:
-            st.subheader("📊 Distribusi Proyek berdasarkan Kategori")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("##### 📌 Jumlah Proyek per Divisi berdasarkan Status")
-                div_status_df = (
-                    df.groupby(["Division", "Project Status"])
-                    .size()
-                    .reset_index(name="Jumlah")
-                )
-
-                chart_div_status = alt.Chart(div_status_df).mark_bar().encode(
-                    x=alt.X("Division:N", title="Divisi"),
-                    y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
-                    color=alt.Color("Project Status:N", title="Status"),
-                    tooltip=["Division", "Project Status", "Jumlah"]
-                ).properties(
-                    height=400,
-                    title="Per Divisi per Status"
-                )
-
-                st.altair_chart(chart_div_status, use_container_width=True)
-
-            with col2:
-                st.markdown("##### 👤 Jumlah Proyek per PIC berdasarkan Prioritas")
-                pic_priority_df = (
-                    df.groupby(["PIC", "Priority Level"])
-                    .size()
-                    .reset_index(name="Jumlah")
-                )
-
-                chart_pic_priority = alt.Chart(pic_priority_df).mark_bar().encode(
-                    x=alt.X("PIC:N", title="PIC", sort='-y'),
-                    y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
-                    color=alt.Color("Priority Level:N", title="Prioritas"),
-                    tooltip=["PIC", "Priority Level", "Jumlah"]
-                ).properties(
-                    height=400,
-                    title="Per PIC per Prioritas"
-                )
-
-                st.altair_chart(chart_pic_priority, use_container_width=True)
-
-
+            # Pastikan kolom Midpoint ada di pic_leaderboard
+            pic_leaderboard["Midpoint"] = pic_leaderboard["Total_Proyek"] / 2
+            label_total = alt.Chart(pic_leaderboard).mark_text(
+                align='center',
+                baseline='middle',
+                color='black',
+                dx=0
+            ).encode(
+                x=alt.X("Midpoint:Q"),
+                y=alt.Y("PIC:N", sort='-x'),
+                text=alt.Text("Total_Proyek:Q")
+            )
             
 
+            st.altair_chart(chart_stacked + label_total, use_container_width=True)
+        else:
+            st.warning("⚠️ Tidak ada data PIC yang tersedia untuk ditampilkan.")
 
-
-
-        
+        # Kanan: Jumlah Proyek per Divisi berdasarkan Status
+        st.markdown("##### Jumlah Proyek per Divisi berdasarkan Status")
+        div_status_df = (
+            df.groupby(["Division", "Project Status"])
+            .size()
+            .reset_index(name="Jumlah")
+        )
+        chart_div_status = alt.Chart(div_status_df).mark_bar().encode(
+            x=alt.X("Division:N", title="Divisi"),
+            y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
+            color=alt.Color("Project Status:N", title="Status"),
+            tooltip=["Division", "Project Status", "Jumlah"]
+        ).properties(
+            height=400
+        )
+        st.altair_chart(chart_div_status, use_container_width=True)
+# ...existing code...
         # Grup visualisasi dalam tiga kolom bar dan satu kolom donut
         st.subheader("📈 Visualisasi Data")
 
