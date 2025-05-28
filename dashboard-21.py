@@ -235,8 +235,47 @@ with tabs[1]:
         </div>
         """
 
+        scroll_script = """
+        <script>
+        let scrollContainer = document.querySelector(".scroll-body");
+        let isPaused = false;
+        let scrollSpeed = 0.5;
+        let idleTimer = null;
+
+        function startAutoScroll() {{
+            function step() {{
+                if (!isPaused) {{
+                    scrollContainer.scrollTop += scrollSpeed;
+                    if (scrollContainer.scrollTop >= scrollContainer.scrollHeight - scrollContainer.clientHeight) {{
+                        scrollContainer.scrollTop = 0;
+                    }}
+                }}
+                requestAnimationFrame(step);
+            }}
+            requestAnimationFrame(step);
+        }}
+
+        function resetIdleTimer() {{
+            isPaused = true;
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {{
+                isPaused = false;
+            }}, 2000);
+        }}
+
+        scrollContainer.addEventListener('scroll', resetIdleTimer);
+        scrollContainer.addEventListener('wheel', resetIdleTimer);
+        scrollContainer.addEventListener('touchmove', resetIdleTimer);
+        scrollContainer.addEventListener('mouseenter', resetIdleTimer);
+        scrollContainer.addEventListener('mouseleave', resetIdleTimer);
+
+        startAutoScroll();
+        </script>
+        """
+
+
         # Render ke Streamlit
-        components.html(scroll_style + table_html, height=360, scrolling=False)
+        components.html(scroll_style + table_html + scroll_script, height=360, scrolling=False)
 
 
 
