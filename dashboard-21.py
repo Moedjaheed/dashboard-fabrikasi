@@ -5,9 +5,8 @@ from datetime import datetime, timedelta
 from gsheets_utils import load_gsheet, update_gsheet
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title='Dashboard Fabrication Project', page_icon='🛠️', layout="wide")
+st.set_page_config(page_title='Aldzama Dashboard Fabrication Project', page_icon='🛠️', layout="wide")
 st.title('🛠️ Fabrication Hydraulic Project Schedule Dashboard')
-st.info('Terhubung dengan Google Sheets untuk manajemen proyek tim fabrikasi.')
 
 sheet_id = "1JLb5wzQL5yT-8joGw53Wc_rDlzO1TaJeZDWCLtB1DoY"
 worksheet_name = "Sheet1"
@@ -29,78 +28,48 @@ overdue_projects = df[df["Sisa Hari"] < 0]
 
 avg_duration = (df["Due Date"] - df["Start Date"]).dt.days.mean()
 
-st.subheader("📊 Ringkasan Proyek")
+# Info and metrics in a single row with two columns
+col_left, col_right = st.columns([2, 3])
+with col_left:
+    st.info('Terhubung dengan Google Sheets untuk manajemen proyek tim fabrikasi.')
+with col_right:
+    st.subheader('Project Summary')
+    met1, met2, met3 = st.columns(3)
+    with met1:
+        st.metric('📌 Total Proyek', total_projects)
+    with met2:
+        st.metric('⚠️ Overdue', len(overdue_projects))
+    with met3:
+        st.metric('🛠 Aktif Saat Ini', len(active_projects))
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("📌 Total Proyek", total_projects)
-col2.metric("🛠 Aktif Saat Ini", len(active_projects))
-col3.metric("⚠️ Overdue", len(overdue_projects))
-col4.metric("📉 Rata-rata Durasi", f"{avg_duration:.1f} hari" if not pd.isna(avg_duration) else "-")
+# Move sidebar higher and reduce top padding/margin for main content
+st.markdown("""
+    <style>
+    /* Reduce Streamlit default top padding */
+    .main .block-container {
+        padding-top: 1.5rem;
+    }
+    /* Reduce sidebar top padding */
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0.5rem;
+    }
+    /* Optional: Reduce space above title/info */
+    .main .block-container h1, .main .block-container .stAlert {
+        margin-top: 0.5rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
+# Sidebar navigation
+menu = st.sidebar.radio(
+    "Navigasi Menu",
+    ("Projects Status", "📋 Input Baru", "🔍 Detail Proyek")
+)
 
-tabs = st.tabs(["📊 Status Proyek", "📋 Input Baru", "🔍 Detail Proyek"])
-
-with tabs[1]:
-    with st.form("new_entry"):
-        st.subheader("➕ Tambah Proyek Baru")
-        item = st.text_input("Item")
-        quantity = st.text_input("Quantity")
-        requested_by = st.text_input("Requested By")
-        request_date = st.date_input("Request Date", today)
-        pic = st.text_input("PIC")
-        division = st.text_input("Division")
-        start = st.date_input("Start Date")
-        due = st.date_input("Due Date")
-        priority = st.selectbox("Priority Level", ["Tinggi", "Sedang", "Rendah"])
-        status = st.selectbox("Project Status", ["Open", "In Progress", "Finish"])
-        remarks = st.text_area("Remarks")
-
-        submitted = st.form_submit_button("Tambah Proyek")
-        if submitted:
-            year_suffix = today.strftime("%y")
-            new_row = pd.DataFrame([{
-                "WO Number": f"AZM/HDS/{year_suffix}-{str(len(st.session_state.DataFrame)+1).zfill(3)}",
-                "Item": item,
-                "Quantity": quantity,
-                "Requested By": requested_by,
-                "Request Date": request_date,
-                "PIC": pic,
-                "Division": division,
-                "Start Date": start,
-                "Due Date": due,
-                "Priority Level": priority,
-                "Project Status": status,
-                "Remarks": remarks,
-                "Sisa Hari": (due - today).days
-            }])
-            st.session_state.DataFrame = pd.concat([st.session_state.DataFrame, new_row], ignore_index=True)
-            st.session_state["change_log"].append(f"[{datetime.now()}] Proyek ditambahkan: {item}")
-            st.success("✅ Proyek berhasil ditambahkan!")
-
-    with tabs[2]:
-        st.subheader("🔍 Detail Proyek")
-        df = st.session_state.DataFrame
-        selected_id = st.selectbox("Pilih Proyek berdasarkan WO Number:", options=df["WO Number"].tolist())
-
-        detail = df[df["WO Number"] == selected_id].iloc[0]
-        st.markdown(f'''
-    **🆔 ID:** {detail["WO Number"]}  
-    **📌 Item:** {detail["Item"]}  
-    **📦 Quantity:** {detail["Quantity"]}  
-    **👥 Requested By:** {detail["Requested By"]}  
-    **📅 Request Date:** {detail["Request Date"].strftime("%d %B %Y") if pd.notnull(detail["Request Date"]) else '-'}  
-    **👤 PIC:** {detail["PIC"]}  
-    **🏢 Division:** {detail["Division"]}  
-    **📅 Start:** {detail["Start Date"].strftime("%d %B %Y") if pd.notnull(detail["Start Date"]) else '-'}  
-    **⏳ Due Date:** {detail["Due Date"].strftime("%d %B %Y") if pd.notnull(detail["Due Date"]) else '-'}  
-    **🗓️ Sisa Hari:** {detail["Sisa Hari"]} days  
-    **🚦 Priority:** {detail["Priority Level"]}  
-    **📍 Status:** {detail["Project Status"]}  
-    **📝 Notes:** {detail["Remarks"] if pd.notnull(detail["Remarks"]) else '-'}
-    ''')
-
-    with tabs[0]:
-        st.subheader("📋 Daftar Proyek Prioritas")
+# Main content area
+if menu == "Projects Status":
+    with st.container():
+        st.subheader("Projects Overview")
         df_vis = st.session_state.DataFrame.copy()
         df_vis["Start Date"] = pd.to_datetime(df_vis["Start Date"], errors="coerce", dayfirst=True)
         df_vis["Due Date"] = pd.to_datetime(df_vis["Due Date"], errors="coerce", dayfirst=True)
@@ -108,7 +77,7 @@ with tabs[1]:
 
         # Siapkan data
         priority_order = {"Tinggi": 0, "Sedang": 1, "Rendah": 2}
-        df_scroll = df[["WO Number", "Item", "PIC", "Priority Level", "Start Date", "Due Date", "Sisa Hari"]].copy()
+        df_scroll = df[["WO Number", "PO Number", "Item", "PIC", "Priority Level", "Start Date", "Due Date", "Sisa Hari", "Remarks"]].copy()
         df_scroll["Priority_Sort"] = df_scroll["Priority Level"].map(priority_order)
         df_scroll = df_scroll.sort_values("Priority_Sort").reset_index(drop=True)
         df_scroll["Start Date"] = df_scroll["Start Date"].dt.strftime("%d %b %Y")
@@ -186,6 +155,8 @@ with tabs[1]:
 
 
         # Baris isi tabel
+        def safe(val):
+            return "" if pd.isna(val) else val
         rows_html = ""
         for _, row in df_scroll.iterrows():
             prio_class = {
@@ -196,13 +167,15 @@ with tabs[1]:
 
             rows_html += f"""
             <tr>
-                <td>{row['WO Number']}</td>
-                <td>{row['Item']}</td>
-                <td>{row['PIC']}</td>
-                <td class="{prio_class}">{row['Priority Level']}</td>
-                <td>{row['Start Date']}</td>
-                <td>{row['Due Date']}</td>
-                <td>{row['Sisa Hari']}</td>
+                <td>{safe(row['WO Number'])}</td>
+                <td>{safe(row['PO Number'])}</td>
+                <td>{safe(row['Item'])}</td>
+                <td>{safe(row['PIC'])}</td>
+                <td class=\"{prio_class}\">{safe(row['Priority Level'])}</td>
+                <td>{safe(row['Start Date'])}</td>
+                <td>{safe(row['Due Date'])}</td>
+                <td>{safe(row['Sisa Hari'])}</td>
+                <td>{safe(row['Remarks'])}</td>
             </tr>
             """
 
@@ -213,12 +186,14 @@ with tabs[1]:
             <thead>
             <tr>
                 <th>WO Number</th>
+                <th>PO Number</th>
                 <th>Item</th>
                 <th>PIC</th>
                 <th>Priority</th>
                 <th>Start Date</th>
                 <th>Due Date</th>
                 <th>Sisa Hari</th>
+                <th>Remarks</th>
             </tr>
             </thead>
         </table>
@@ -292,8 +267,113 @@ with tabs[1]:
         #     update_gsheet(worksheet, st.session_state.DataFrame)
         #     st.success("✅ Data berhasil disimpan ke Google Sheets!")
 
+        
+
+        # Dua kolom: kiri = total proyek per PIC, kanan = distribusi proyek berdasarkan kategori
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.markdown("#### Total Proyek per PIC")
+            if "PIC" in df.columns and df["PIC"].notna().sum() > 0:
+                df_valid = df[df["PIC"].notna()].copy()
+                df_valid["PIC"] = df_valid["PIC"].astype(str)
+
+                pic_leaderboard = (
+                    df_valid["PIC"]
+                    .value_counts()
+                    .rename_axis("PIC")
+                    .reset_index(name="Jumlah_Proyek")
+                )
+
+                # Terapkan filter
+                pic_leaderboard_filtered = pic_leaderboard[
+                    pic_leaderboard["Jumlah_Proyek"] >= 1
+                ].copy()
+
+                # Tambahkan titik tengah untuk teks
+                pic_leaderboard_filtered["Midpoint"] = pic_leaderboard_filtered["Jumlah_Proyek"] / 2
+
+                # Visualisasi dalam satu kolom
+                st.markdown("##### 📊 Visualisasi Leaderboard")
+
+                base_chart = alt.Chart(pic_leaderboard_filtered).encode(
+                    y=alt.Y("PIC:N", sort='-x', title="PIC")
+                )
+
+                bars = base_chart.mark_bar().encode(
+                    x=alt.X("Jumlah_Proyek:Q", title="Jumlah Proyek"),
+                    tooltip=["PIC:N", "Jumlah_Proyek:Q"]
+                )
+
+                labels = alt.Chart(pic_leaderboard_filtered).mark_text(
+                    align='center',
+                    baseline='middle',
+                    color='white'
+                ).encode(
+                    x=alt.X("Midpoint:Q"),
+                    y=alt.Y("PIC:N"),
+                    text=alt.Text("Jumlah_Proyek:Q")
+                )
+
+                st.altair_chart(
+                    (bars + labels).properties(
+                        height=400,
+                        title="PIC dengan Jumlah Proyek Terbanyak"
+                    ),
+                    use_container_width=True
+                )
+            else:
+                st.warning("⚠️ Tidak ada data PIC yang tersedia untuk ditampilkan.")
+
+        with col_right:
+            st.subheader("📊 Distribusi Proyek berdasarkan Kategori")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("##### 📌 Jumlah Proyek per Divisi berdasarkan Status")
+                div_status_df = (
+                    df.groupby(["Division", "Project Status"])
+                    .size()
+                    .reset_index(name="Jumlah")
+                )
+
+                chart_div_status = alt.Chart(div_status_df).mark_bar().encode(
+                    x=alt.X("Division:N", title="Divisi"),
+                    y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
+                    color=alt.Color("Project Status:N", title="Status"),
+                    tooltip=["Division", "Project Status", "Jumlah"]
+                ).properties(
+                    height=400,
+                    title="Per Divisi per Status"
+                )
+
+                st.altair_chart(chart_div_status, use_container_width=True)
+
+            with col2:
+                st.markdown("##### 👤 Jumlah Proyek per PIC berdasarkan Prioritas")
+                pic_priority_df = (
+                    df.groupby(["PIC", "Priority Level"])
+                    .size()
+                    .reset_index(name="Jumlah")
+                )
+
+                chart_pic_priority = alt.Chart(pic_priority_df).mark_bar().encode(
+                    x=alt.X("PIC:N", title="PIC", sort='-y'),
+                    y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
+                    color=alt.Color("Priority Level:N", title="Prioritas"),
+                    tooltip=["PIC", "Priority Level", "Jumlah"]
+                ).properties(
+                    height=400,
+                    title="Per PIC per Prioritas"
+                )
+
+                st.altair_chart(chart_pic_priority, use_container_width=True)
 
 
+            
+
+
+
+
+        
         # Grup visualisasi dalam tiga kolom bar dan satu kolom donut
         st.subheader("📈 Visualisasi Data")
 
@@ -413,154 +493,42 @@ with tabs[1]:
 
                         
 
-        # 📊 Visualisasi Proyek per Divisi dan PIC berdasarkan Status & Prioritas
-        st.subheader("📊 Distribusi Proyek berdasarkan Kategori")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("##### 📌 Jumlah Proyek per Divisi berdasarkan Status")
-            div_status_df = (
-                df.groupby(["Division", "Project Status"])
-                .size()
-                .reset_index(name="Jumlah")
-            )
-
-            chart_div_status = alt.Chart(div_status_df).mark_bar().encode(
-                x=alt.X("Division:N", title="Divisi"),
-                y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
-                color=alt.Color("Project Status:N", title="Status"),
-                tooltip=["Division", "Project Status", "Jumlah"]
-            ).properties(
-                height=400,
-                title="Per Divisi per Status"
-            )
-
-            st.altair_chart(chart_div_status, use_container_width=True)
-
-        with col2:
-            st.markdown("##### 👤 Jumlah Proyek per PIC berdasarkan Prioritas")
-            pic_priority_df = (
-                df.groupby(["PIC", "Priority Level"])
-                .size()
-                .reset_index(name="Jumlah")
-            )
-
-            chart_pic_priority = alt.Chart(pic_priority_df).mark_bar().encode(
-                x=alt.X("PIC:N", title="PIC", sort='-y'),
-                y=alt.Y("Jumlah:Q", title="Jumlah Proyek"),
-                color=alt.Color("Priority Level:N", title="Prioritas"),
-                tooltip=["PIC", "Priority Level", "Jumlah"]
-            ).properties(
-                height=400,
-                title="Per PIC per Prioritas"
-            )
-
-            st.altair_chart(chart_pic_priority, use_container_width=True)
 
 
+        # # 📈 Tren Proyek Dimulai dan Diselesaikan
+        # st.markdown("### 📈 Tren Mingguan Proyek")
 
+        # # Siapkan data tren mingguan
+        # df_trend = df.copy()
+        # df_trend["Start Date"] = pd.to_datetime(df_trend["Start Date"], errors="coerce")
+        # df_trend["Due Date"] = pd.to_datetime(df_trend["Due Date"], errors="coerce")
 
-        # 📈 Tren Proyek Dimulai dan Diselesaikan
-        st.markdown("### 📈 Tren Mingguan Proyek")
+        # # Tambahkan kolom minggu
+        # df_trend["Start Week"] = df_trend["Start Date"].dt.to_period("W").dt.start_time
+        # df_trend["Finish Week"] = df_trend.loc[df_trend["Project Status"] == "Finish", "Due Date"].dt.to_period("W").dt.start_time
 
-        # Siapkan data tren mingguan
-        df_trend = df.copy()
-        df_trend["Start Date"] = pd.to_datetime(df_trend["Start Date"], errors="coerce")
-        df_trend["Due Date"] = pd.to_datetime(df_trend["Due Date"], errors="coerce")
+        # # Hitung jumlah proyek mulai dan selesai per minggu
+        # start_trend = df_trend.groupby("Start Week").size().reset_index(name="Started Projects")
+        # finish_trend = df_trend[df_trend["Project Status"] == "Finish"].groupby("Finish Week").size().reset_index(name="Finished Projects")
 
-        # Tambahkan kolom minggu
-        df_trend["Start Week"] = df_trend["Start Date"].dt.to_period("W").dt.start_time
-        df_trend["Finish Week"] = df_trend.loc[df_trend["Project Status"] == "Finish", "Due Date"].dt.to_period("W").dt.start_time
+        # # Gabungkan dan rapikan data tren
+        # trend_df = pd.merge(start_trend, finish_trend, left_on="Start Week", right_on="Finish Week", how="outer")
+        # trend_df["Week"] = trend_df["Start Week"].combine_first(trend_df["Finish Week"])
+        # trend_df = trend_df[["Week", "Started Projects", "Finished Projects"]].fillna(0)
+        # trend_df = trend_df.sort_values("Week")
 
-        # Hitung jumlah proyek mulai dan selesai per minggu
-        start_trend = df_trend.groupby("Start Week").size().reset_index(name="Started Projects")
-        finish_trend = df_trend[df_trend["Project Status"] == "Finish"].groupby("Finish Week").size().reset_index(name="Finished Projects")
+        # # Visualisasi tren mingguan
+        # chart_trend = alt.Chart(trend_df).transform_fold(
+        #     ['Started Projects', 'Finished Projects'],
+        #     as_=['Tipe', 'Jumlah']
+        # ).mark_line(point=True).encode(
+        #     x=alt.X('Week:T', title='Minggu'),
+        #     y=alt.Y('Jumlah:Q', title='Jumlah Proyek'),
+        #     color=alt.Color('Tipe:N', title='Tipe Proyek'),
+        #     tooltip=['Week:T', 'Tipe:N', 'Jumlah:Q']
+        # ).properties(height=350, title="Tren Proyek Dimulai dan Diselesaikan per Minggu")
 
-        # Gabungkan dan rapikan data tren
-        trend_df = pd.merge(start_trend, finish_trend, left_on="Start Week", right_on="Finish Week", how="outer")
-        trend_df["Week"] = trend_df["Start Week"].combine_first(trend_df["Finish Week"])
-        trend_df = trend_df[["Week", "Started Projects", "Finished Projects"]].fillna(0)
-        trend_df = trend_df.sort_values("Week")
-
-        # Visualisasi tren mingguan
-        chart_trend = alt.Chart(trend_df).transform_fold(
-            ['Started Projects', 'Finished Projects'],
-            as_=['Tipe', 'Jumlah']
-        ).mark_line(point=True).encode(
-            x=alt.X('Week:T', title='Minggu'),
-            y=alt.Y('Jumlah:Q', title='Jumlah Proyek'),
-            color=alt.Color('Tipe:N', title='Tipe Proyek'),
-            tooltip=['Week:T', 'Tipe:N', 'Jumlah:Q']
-        ).properties(height=350, title="Tren Proyek Dimulai dan Diselesaikan per Minggu")
-
-        st.altair_chart(chart_trend, use_container_width=True)
-
-
-
-
-        st.markdown("#### 🏆 Leaderboard PIC Dengan Jumlah Proyek Terbanyak")
-
-        if "PIC" in df.columns and df["PIC"].notna().sum() > 0:
-            df_valid = df[df["PIC"].notna()].copy()
-            df_valid["PIC"] = df_valid["PIC"].astype(str)
-
-            pic_leaderboard = (
-                df_valid["PIC"]
-                .value_counts()
-                .rename_axis("PIC")
-                .reset_index(name="Jumlah_Proyek")
-            )
-
-            with st.expander("🔎 Filter Leaderboard PIC"):
-                min_projects = st.slider(
-                    "Tampilkan hanya PIC dengan minimal proyek:",
-                    min_value=1,
-                    max_value=int(pic_leaderboard["Jumlah_Proyek"].max()),
-                    value=1
-                )
-
-            # Terapkan filter
-            pic_leaderboard_filtered = pic_leaderboard[
-                pic_leaderboard["Jumlah_Proyek"] >= min_projects
-            ].copy()
-
-            # Tambahkan titik tengah untuk teks
-            pic_leaderboard_filtered["Midpoint"] = pic_leaderboard_filtered["Jumlah_Proyek"] / 2
-
-            # Visualisasi dalam satu kolom
-            st.markdown("##### 📊 Visualisasi Leaderboard")
-
-            base_chart = alt.Chart(pic_leaderboard_filtered).encode(
-                y=alt.Y("PIC:N", sort='-x', title="PIC")
-            )
-
-            bars = base_chart.mark_bar().encode(
-                x=alt.X("Jumlah_Proyek:Q", title="Jumlah Proyek"),
-                tooltip=["PIC:N", "Jumlah_Proyek:Q"]
-            )
-
-            labels = alt.Chart(pic_leaderboard_filtered).mark_text(
-                align='center',
-                baseline='middle',
-                color='white'
-            ).encode(
-                x=alt.X("Midpoint:Q"),
-                y=alt.Y("PIC:N"),
-                text=alt.Text("Jumlah_Proyek:Q")
-            )
-
-            st.altair_chart(
-                (bars + labels).properties(
-                    height=400,
-                    title="PIC dengan Jumlah Proyek Terbanyak"
-                ),
-                use_container_width=True
-            )
-
-        else:
-            st.warning("⚠️ Tidak ada data PIC yang tersedia untuk ditampilkan.")
-
+        # st.altair_chart(chart_trend, use_container_width=True)
 
 
 
@@ -579,6 +547,67 @@ with tabs[1]:
             use_container_width=True,
             hide_index=True
         )
+
+elif menu == "📋 Input Baru":
+    with st.container():
+        st.subheader("➕ Tambah Proyek Baru")
+        with st.form("form_input_baru"):
+            item = st.text_input("Item")
+            quantity = st.text_input("Quantity")
+            requested_by = st.text_input("Requested By")
+            request_date = st.date_input("Request Date", today)
+            pic = st.text_input("PIC")
+            division = st.text_input("Division")
+            start = st.date_input("Start Date")
+            due = st.date_input("Due Date")
+            priority = st.selectbox("Priority Level", ["Tinggi", "Sedang", "Rendah"])
+            status = st.selectbox("Project Status", ["Open", "In Progress", "Finish"])
+            remarks = st.text_area("Remarks")
+
+            submitted = st.form_submit_button("Tambah Proyek")
+            if submitted:
+                year_suffix = today.strftime("%y")
+                new_row = pd.DataFrame([{
+                    "WO Number": f"AZM/HDS/{year_suffix}-{str(len(st.session_state.DataFrame)+1).zfill(3)}",
+                    "Item": item,
+                    "Quantity": quantity,
+                    "Requested By": requested_by,
+                    "Request Date": request_date,
+                    "PIC": pic,
+                    "Division": division,
+                    "Start Date": start,
+                    "Due Date": due,
+                    "Priority Level": priority,
+                    "Project Status": status,
+                    "Remarks": remarks,
+                    "Sisa Hari": (due - today).days
+                }])
+                st.session_state.DataFrame = pd.concat([st.session_state.DataFrame, new_row], ignore_index=True)
+                st.session_state["change_log"].append(f"[{datetime.now()}] Proyek ditambahkan: {item}")
+                st.success("✅ Proyek berhasil ditambahkan!")
+
+elif menu == "🔍 Detail Proyek":
+    with st.container():
+        st.subheader("🔍 Detail Proyek")
+        df = st.session_state.DataFrame
+        selected_id = st.selectbox("Pilih Proyek berdasarkan WO Number:", options=df["WO Number"].tolist())
+
+        detail = df[df["WO Number"] == selected_id].iloc[0]
+        st.markdown(f'''
+    **🆔 ID:** {detail["WO Number"]}  
+    **📌 Item:** {detail["Item"]}  
+    **📦 Quantity:** {detail["Quantity"]}  
+    **👥 Requested By:** {detail["Requested By"]}  
+    **📅 Request Date:** {detail["Request Date"].strftime("%d %B %Y") if pd.notnull(detail["Request Date"]) else '-'}  
+    **👤 PIC:** {detail["PIC"]}  
+    **🏢 Division:** {detail["Division"]}  
+    **📅 Start:** {detail["Start Date"].strftime("%d %B %Y") if pd.notnull(detail["Start Date"]) else '-'}  
+    **⏳ Due Date:** {detail["Due Date"].strftime("%d %B %Y") if pd.notnull(detail["Due Date"]) else '-'}  
+    **🗓️ Sisa Hari:** {detail["Sisa Hari"]} days  
+    **🚦 Priority:** {detail["Priority Level"]}  
+    **📍 Status:** {detail["Project Status"]}  
+    **📝 Notes:** {detail["Remarks"] if pd.notnull(detail["Remarks"]) else '-'}
+    ''')
 
 
 
