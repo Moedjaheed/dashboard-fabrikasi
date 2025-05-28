@@ -117,64 +117,86 @@ with tabs[1]:
         # CSS & HTML
         scroll_style = """
         <style>
-        .scroll-table-container {
-            height: 300px;
-            overflow: hidden;
-            position: relative;
-        }
-
         .scroll-container {
             width: 100%;
             border: 1px solid #444;
             border-radius: 5px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
             font-family: sans-serif;
         }
+
         .scroll-table {
             width: 100%;
+            min-width: 700px;
             border-collapse: collapse;
-            table-layout: fixed;  /* ✅ Menyamakan lebar kolom antara thead dan tbody */
+            table-layout: fixed;
         }
+
         .scroll-table thead {
             position: sticky;
             top: 0;
             background-color: #1a1a1a;
             z-index: 2;
         }
+
+        .scroll-table th, .scroll-table td {
+            padding: 10px;
+            font-size: 13px;
+            text-align: left;
+            border: 1px solid #333;
+            color: black;
+        }
+
         .scroll-table th {
-            padding: 10px;
-            font-size: 13px;
-            text-align: left;
-            border: 1px solid #333;
-            color: black;              /* ✅ teks putih */
-            background-color: white; /* ✅ latar belakang gelap */
+            background-color: white;
+            color: black;
         }
-        .scroll-table td {
-            padding: 10px;
-            font-size: 13px;
-            text-align: left;
-            border: 1px solid #333;
-        }
+
         .scroll-body {
             height: 360px;
             overflow: hidden;
             position: relative;
         }
+
         .scroll-inner {
             display: inline-block;
             animation: scroll-up 100s linear infinite;
         }
+
         .high-priority { background-color: #ff4d4d; color: black; }
         .medium-priority { background-color: #ffd966; color: black; }
         .low-priority { background-color: #87ceeb; color: black; }
+
+        /* Responsive for mobile */
+        @media screen and (max-width: 768px) {
+            .scroll-table th, .scroll-table td {
+                font-size: 11px;
+                padding: 6px;
+            }
+        }
+
+        /* DARK MODE SUPPORT */
+        @media (prefers-color-scheme: dark) {
+            .scroll-table th, .scroll-table td {
+                color: white;
+            }
+            .scroll-table th {
+                background-color: #333;
+                color: white;
+            }
+            .scroll-container {
+                border-color: #666;
+            }
+        }
 
         @keyframes scroll-up {
             0% { transform: translateY(0); }
             100% { transform: translateY(-50%); }
         }
         </style>
-
         """
+
 
         # Baris isi tabel
         rows_html = ""
@@ -186,11 +208,11 @@ with tabs[1]:
             }.get(row["Priority Level"], "")
 
             rows_html += f"""
-            <tr class="{prio_class}">
+            <tr>
                 <td>{row['WO Number']}</td>
                 <td>{row['Item']}</td>
                 <td>{row['PIC']}</td>
-                <td>{row['Priority Level']}</td>
+                <td class="{prio_class}">{row['Priority Level']}</td>
                 <td>{row['Start Date']}</td>
                 <td>{row['Due Date']}</td>
                 <td>{row['Sisa Hari']}</td>
@@ -200,9 +222,10 @@ with tabs[1]:
         # Tabel HTML split: header tetap, isi scroll
         table_html = f"""
         <div class="scroll-container">
-        <table class="scroll-table">
+        <div class="scroll-body">
+            <table class="scroll-table">
             <thead>
-            <tr>
+                <tr>
                 <th>WO Number</th>
                 <th>Item</th>
                 <th>PIC</th>
@@ -210,21 +233,17 @@ with tabs[1]:
                 <th>Start Date</th>
                 <th>Due Date</th>
                 <th>Sisa Hari</th>
-            </tr>
+                </tr>
             </thead>
-        </table>
-        <div class="scroll-body">
-            <div class="scroll-inner">
-            <table class="scroll-table">
-                <tbody>
+            <tbody class="scroll-inner">
                 {rows_html}
-                {rows_html}    <!-- Duplicate to loop -->
-                </tbody>
+                {rows_html} <!-- Duplicate to loop -->
+            </tbody>
             </table>
-            </div>
         </div>
         </div>
         """
+
 
         # Render ke Streamlit
         components.html(scroll_style + table_html, height=360, scrolling=False)
