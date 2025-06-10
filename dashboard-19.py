@@ -378,7 +378,7 @@ if menu == "Projects Status":
                     ),
                     tooltip=["PIC", "Priority Level", "Jumlah"]
                 ).properties(
-                    height=450
+                    height=350
                 )
 
                 # Menambahkan label total
@@ -411,7 +411,7 @@ if menu == "Projects Status":
                 color=alt.Color(field="Status", type="nominal"),
                 tooltip=["Status", "Jumlah"]
             ).properties(
-                height=450
+                height=350
             )
             
             st.altair_chart(donut_chart, use_container_width=True)
