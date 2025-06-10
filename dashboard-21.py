@@ -193,7 +193,7 @@ if menu == "Projects Status":
                 <th>Start Date</th>
                 <th>Due Date</th>
                 <th>Sisa Hari</th>
-                <th>Remarks</th>
+                <th>Catatan</th>
             </tr>
             </thead>
         </table>
@@ -297,8 +297,7 @@ if menu == "Projects Status":
                 color=alt.Color("Priority Level:N", title="Prioritas"),
                 tooltip=["PIC", "Priority Level", "Jumlah"]
             ).properties(
-                height=400,
-                title="Jumlah Proyek per PIC dan Prioritas"
+                height=400
             )
 
             # Pastikan kolom Midpoint ada di pic_leaderboard
@@ -335,7 +334,7 @@ if menu == "Projects Status":
             height=400
         )
         st.altair_chart(chart_div_status, use_container_width=True)
-# ...existing code...
+        
         # Grup visualisasi dalam tiga kolom bar dan satu kolom donut
         st.subheader("📈 Visualisasi Data")
 
