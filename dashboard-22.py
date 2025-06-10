@@ -9,93 +9,8 @@ st.set_page_config(
     page_title='Aldzama Dashboard Fabrication Project',
     page_icon='🛠️',
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed"  # Membuat sidebar tertutup saat pertama kali dibuka
 )
-
-# Optimize layout for 65-inch TV display
-st.markdown("""
-    <style>
-    /* Hide default header */
-    header {display: none !important;}
-    
-    /* Page layout optimization */
-    .main .block-container {
-        padding: 1rem 1rem !important;
-        max-width: 100% !important;
-        margin-top: 0 !important;
-    }
-    
-    /* Header and title optimization */
-    .main .block-container h1 {
-        font-size: 2.5rem !important;
-        margin: 0 0 1rem 0 !important;
-        padding: 0 !important;
-        color: #262730 !important;
-    }
-    
-    /* Enhance table visibility */
-    .scroll-container {
-        margin-bottom: 1rem !important;
-    }
-    .scroll-table th {
-        background-color: #f0f2f6 !important;
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
-        padding: 1rem !important;
-    }
-    .scroll-table td {
-        font-size: 1.1rem !important;
-        padding: 0.8rem !important;
-    }
-    .scroll-body {
-        height: 42vh !important;
-    }
-    
-    /* Priority colors with better visibility */
-    .high-priority { 
-        background-color: #ff4d4d !important; 
-        color: black !important; 
-        font-weight: bold !important;
-        font-size: 1.1rem !important;
-    }
-    .medium-priority { 
-        background-color: #ffd966 !important; 
-        color: black !important; 
-        font-weight: bold !important;
-        font-size: 1.1rem !important;
-    }
-    .low-priority { 
-        background-color: #87ceeb !important; 
-        color: black !important; 
-        font-weight: bold !important;
-        font-size: 1.1rem !important;
-    }
-    
-    /* Chart headings */
-    .stMarkdown h5 {
-        font-size: 1.5rem !important;
-        margin: 0.5rem 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Reduce sidebar width */
-    [data-testid="stSidebar"] {
-        width: 200px !important;
-    }
-    
-    /* Improve chart visibility */
-    .chart-container {
-        margin-top: 0 !important;
-    }
-    
-    /* Hide unnecessary margins and padding */
-    .element-container {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 st.title('🛠️ Fabrication Hydraulic Project Schedule Dashboard')
 
 sheet_id = "1JLb5wzQL5yT-8joGw53Wc_rDlzO1TaJeZDWCLtB1DoY"
@@ -321,8 +236,11 @@ if menu == "Projects Status":
 
         startAutoScroll();
         </script>
-        """        # Render ke Streamlit dengan tinggi yang disesuaikan untuk TV
-        components.html(scroll_style + table_html + scroll_script, height=450, scrolling=False)
+        """
+
+
+        # Render ke Streamlit
+        components.html(scroll_style + table_html + scroll_script, height=360, scrolling=False)
 
 
 
@@ -366,7 +284,9 @@ if menu == "Projects Status":
                 # Total untuk pengurutan
                 pic_totals = pic_priority_df.groupby("PIC")["Jumlah"].sum().reset_index()
                 pic_totals = pic_totals.sort_values("Jumlah", ascending=False)
-                pic_order = pic_totals["PIC"].tolist()                # Grafik batang bertumpuk dengan warna yang diperbarui
+                pic_order = pic_totals["PIC"].tolist()
+
+                # Grafik batang bertumpuk dengan warna yang diperbarui
                 chart_stacked = alt.Chart(pic_priority_df).mark_bar().encode(
                     x=alt.X("Jumlah:Q", title="Jumlah Proyek"),
                     y=alt.Y("PIC:N", title="PIC", sort=pic_order),
@@ -378,7 +298,7 @@ if menu == "Projects Status":
                     ),
                     tooltip=["PIC", "Priority Level", "Jumlah"]
                 ).properties(
-                    height=450
+                    height=400
                 )
 
                 # Menambahkan label total
@@ -405,13 +325,15 @@ if menu == "Projects Status":
             st.markdown("##### Distribusi Status Proyek")
             # Siapkan data untuk distribusi status
             status_count = df["Project Status"].value_counts().reset_index()
-            status_count.columns = ["Status", "Jumlah"]            # Buat grafik donut untuk distribusi status
+            status_count.columns = ["Status", "Jumlah"]
+            
+            # Buat grafik donut untuk distribusi status
             donut_chart = alt.Chart(status_count).mark_arc(innerRadius=50).encode(
                 theta=alt.Theta(field="Jumlah", type="quantitative"),
                 color=alt.Color(field="Status", type="nominal"),
                 tooltip=["Status", "Jumlah"]
             ).properties(
-                height=450
+                height=400
             )
             
             st.altair_chart(donut_chart, use_container_width=True)
@@ -667,6 +589,3 @@ elif menu == "🔍 Detail Proyek":
     **📍 Status:** {detail["Project Status"]}  
     **📝 Notes:** {detail["Remarks"] if pd.notnull(detail["Remarks"]) else '-'}
     ''')
-
-
-
