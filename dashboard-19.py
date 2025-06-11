@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title='Aldzama Dashboard',
-    page_icon=r"assets\favicon.png",
+    page_icon="assets\favicon.png",
     layout="wide",
     initial_sidebar_state="collapsed"  # Membuat sidebar tertutup saat pertama kali dibuka
 )
