@@ -17,6 +17,9 @@ sheet_id = "1JLb5wzQL5yT-8joGw53Wc_rDlzO1TaJeZDWCLtB1DoY"
 worksheet_name = "Sheet1"
 df, worksheet = load_gsheet(sheet_id, worksheet_name)
 
+# Filter agar hanya tampil project yang belum selesai (bukan Finish)
+df = df[df["Project Status"].str.lower() != "finish"].copy()
+
 today = datetime.now().date()
 df["Start Date"] = pd.to_datetime(df["Start Date"], errors="coerce", dayfirst=True)
 df["Due Date"] = pd.to_datetime(df["Due Date"], errors="coerce", dayfirst=True)
