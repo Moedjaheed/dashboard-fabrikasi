@@ -9,8 +9,7 @@ st.set_page_config(
     page_title='Aldzama Dashboard Fabrication Project',
     page_icon='🛠️',
     layout="wide",
-    initial_sidebar_state="collapsed",  # Membuat sidebar tertutup saat pertama kali dibuka
-    theme="light"
+    initial_sidebar_state="collapsed"  # Membuat sidebar tertutup saat pertama kali dibuka
 )
 st.title('🛠️ Fabrication Hydraulic Project Schedule Dashboard')
 
